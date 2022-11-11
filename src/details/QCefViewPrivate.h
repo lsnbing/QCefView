@@ -230,6 +230,7 @@ protected:
 
   QVariant onViewInputMethodQuery(Qt::InputMethodQuery query) const;
 
+  void updateRange(const QString& composingText, QInputMethodEvent* event);
   void onViewInputMethodEvent(QInputMethodEvent* event);
 
   void onViewVisibilityChanged(bool visible);

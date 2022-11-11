@@ -207,7 +207,9 @@ target_link_libraries(QCefView
   Qt${QT_VERSION_MAJOR}::Widgets
   PRIVATE
   CefViewCore
+  Imm32
 )
+
 
 # install QCefView files
 install(

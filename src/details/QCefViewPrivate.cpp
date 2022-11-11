@@ -366,6 +366,17 @@ QCefViewPrivate::onCefInputStateChanged(bool editable)
 {
   Q_Q(QCefView);
   q->setAttribute(Qt::WA_InputMethodEnabled, editable);
+#ifdef WIN32
+  if (editable && isOSRModeEnabled_) {
+    CefCompositionUnderline underline;
+    underline.background_color = 0;
+    underline.range = { 0, 10 };
+    CefRange selectionRange;
+    selectionRange.Set(0, 1);
+    pCefBrowser_->GetHost()->ImeSetComposition(" ", { underline }, CefRange(UINT32_MAX, UINT32_MAX), selectionRange);
+    pCefBrowser_->GetHost()->ImeCommitText("", CefRange(UINT32_MAX, UINT32_MAX), 0);
+  }
+#endif // WIN32
 }
 
 void
@@ -373,7 +384,9 @@ QCefViewPrivate::onOsrImeCursorRectChanged(const QRect& rc)
 {
   osr.qImeCursorRect_ = rc;
   auto inputMethod = QGuiApplication::inputMethod();
-  if (inputMethod) {
+  Q_Q(QCefView);
+
+  if (inputMethod) {    
     inputMethod->update(Qt::ImCursorRectangle);
   }
 }
@@ -404,7 +417,9 @@ QCefViewPrivate::onContextMenuTriggered(QAction* action)
     auto eventFlags = EVENTFLAG_NONE;
     auto commandId = action->data().toInt();
     osr.contextMenuCallback_->Continue(commandId, eventFlags);
+    #if CEF_VERSION_MAJOR > 89
     osr.contextMenuCallback_.reset();
+    #endif
   }
 }
 
@@ -419,7 +434,9 @@ QCefViewPrivate::onContextMenuDestroyed(QObject* obj)
 
   if (osr.contextMenuCallback_) {
     osr.contextMenuCallback_->Cancel();
+#if CEF_VERSION_MAJOR > 89
     osr.contextMenuCallback_.reset();
+    #endif
   }
 
   osr.isShowingContextMenu_ = false;
@@ -515,7 +532,9 @@ QCefViewPrivate::onRunCefContextMenu(QPoint pos, CefRefPtr<CefRunContextMenuCall
 void
 QCefViewPrivate::onCefContextMenuDismissed()
 {
+#if CEF_VERSION_MAJOR > 89
   osr.contextMenuCallback_.reset();
+  #endif
 }
 
 bool
@@ -576,15 +595,27 @@ QVariant
 QCefViewPrivate::onViewInputMethodQuery(Qt::InputMethodQuery query) const
 {
   //#if defined(CEF_USE_OSR)
+  Q_Q(const QCefView);
   if (isOSRModeEnabled_) {
     switch (query) {
-      case Qt::ImCursorRectangle:
+      case Qt::ImCursorRectangle: {
+#ifdef  WIN32
+        HIMC imc = ::ImmGetContext((HWND)q->winId());
+        if (imc) {
+          COMPOSITIONFORM composition = { CFS_POINT,
+                                          { osr.qImeCursorRect_.x(), osr.qImeCursorRect_.y() },
+                                          { 0, 0, 200, 20 } };
+          ::ImmSetCompositionWindow(imc, &composition);
+        }
+#endif //  WIN32
         return QVariant(osr.qImeCursorRect_);
+      }
       case Qt::ImAnchorRectangle:
         break;
       case Qt::ImFont:
         break;
       case Qt::ImCursorPosition:
+        return QVariant(QPoint(osr.qImeCursorRect_.x(), osr.qImeCursorRect_.y()));
         break;
       case Qt::ImSurroundingText:
         break;
@@ -603,6 +634,33 @@ QCefViewPrivate::onViewInputMethodQuery(Qt::InputMethodQuery query) const
 }
 
 void
+QCefViewPrivate::updateRange(const QString& composingText, QInputMethodEvent* event)
+{
+  CefCompositionUnderline underline;
+  underline.background_color = 0;
+  underline.range = { 0, (int)composingText.length() };
+
+  CefRange selectionRange;
+  for (auto& attr : event->attributes()) {
+    switch (attr.type) {
+      case QInputMethodEvent::TextFormat:
+        break;
+      case QInputMethodEvent::Cursor:
+        selectionRange.Set(attr.start, attr.start);
+        break;
+      case QInputMethodEvent::Language:
+      case QInputMethodEvent::Ruby:
+      case QInputMethodEvent::Selection:
+        break;
+      default:
+        break;
+    }
+  }
+  pCefBrowser_->GetHost()->ImeSetComposition(
+    composingText.toStdString(), { underline }, CefRange(UINT32_MAX, UINT32_MAX), selectionRange);
+}
+
+void
 QCefViewPrivate::onViewInputMethodEvent(QInputMethodEvent* event)
 {
   //#if defined(CEF_USE_OSR)
@@ -614,6 +672,7 @@ QCefViewPrivate::onViewInputMethodEvent(QInputMethodEvent* event)
     auto composedText = event->commitString();
 
     if (!composedText.isEmpty()) {
+      updateRange(composedText, event);
       pCefBrowser_->GetHost()->ImeCommitText(composedText.toStdString(), CefRange(UINT32_MAX, UINT32_MAX), 0);
     } else if (!composingText.isEmpty()) {
       CefCompositionUnderline underline;

@@ -12,11 +12,13 @@ QCefContextPrivate::initializeCef(const QCefConfig* config)
   CefSettings cef_settings;
   QCefConfigPrivate::CopyToCefSettings(config, &cef_settings);
 
+
   // fixed values
   cef_settings.pack_loading_disabled = false;
   cef_settings.multi_threaded_message_loop = true;
   cef_settings.external_message_pump = false;
 
+  CefString(&cef_settings.locale) = "zh-CN";
 #if !defined(CEF_USE_SANDBOX)
   cef_settings.no_sandbox = true;
 #endif
