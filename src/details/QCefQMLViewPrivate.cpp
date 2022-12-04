@@ -3,8 +3,8 @@
 #include "QCefSetting.h"
 #include "QCefSettingPrivate.h"
 #include <QCefQMLView.h>
-#include <QWindow>
 #include <QPainter>
+#include <QWindow>
 
 QCefQMLViewPrivate::QCefQMLViewPrivate(QCefContextPrivate* ctx,
                                        QCefQMLView* view,
@@ -28,7 +28,7 @@ QCefQMLViewPrivate::onCefMainBrowserCreated(CefRefPtr<CefBrowser>& browser, QWin
 
   // monitor the screenChanged signal from the top-level window
   disconnect(this, SLOT(onViewScreenChanged(QScreen*)));
-  //if (q_ptr->window()->windowHandle()) {
+  // if (q_ptr->window()->windowHandle()) {
   //  connect(q_ptr->window()->windowHandle(),    //
   //          SIGNAL(screenChanged(QScreen*)),    //
   //          this,                               //
@@ -117,4 +117,76 @@ QCefQMLViewPrivate::onOsrUpdateViewFrame(const QImage& frame, const QRegion& reg
     }
   }
   emit updateOsrFrame();
+}
+
+void
+QCefQMLViewPrivate::onViewWheelEvent(QWheelEvent* event)
+{
+  auto p = event->position();
+  auto d = event->angleDelta();
+  auto m = event->modifiers();
+  auto b = event->buttons();
+
+  CefMouseEvent e;
+  e.modifiers |= m & Qt::ControlModifier ? EVENTFLAG_CONTROL_DOWN : 0;
+  e.modifiers |= m & Qt::ShiftModifier ? EVENTFLAG_SHIFT_DOWN : 0;
+  e.modifiers |= m & Qt::AltModifier ? EVENTFLAG_ALT_DOWN : 0;
+  e.modifiers |= b & Qt::LeftButton ? EVENTFLAG_LEFT_MOUSE_BUTTON : 0;
+  e.modifiers |= b & Qt::RightButton ? EVENTFLAG_RIGHT_MOUSE_BUTTON : 0;
+  e.modifiers |= b & Qt::MiddleButton ? EVENTFLAG_MIDDLE_MOUSE_BUTTON : 0;
+
+  e.x = p.x();
+  e.y = p.y();
+  pCefBrowser_->GetHost()->SendMouseWheelEvent(e, m & Qt::ShiftModifier ? 0 : d.x(), m & Qt::ShiftModifier ? 0 : d.y());
+}
+
+void
+QCefQMLViewPrivate::onViewMouseEvent(QMouseEvent* event)
+{
+    if (!pCefBrowser_)
+      return;
+
+    auto b = event->buttons();
+    auto m = event->modifiers();
+
+    CefMouseEvent e;
+    e.x = ((QMouseEvent*)event)->pos().x();
+    e.y = ((QMouseEvent*)event)->pos().y();
+    e.modifiers |= m & Qt::ControlModifier ? EVENTFLAG_CONTROL_DOWN : 0;
+    e.modifiers |= m & Qt::ShiftModifier ? EVENTFLAG_SHIFT_DOWN : 0;
+    e.modifiers |= m & Qt::AltModifier ? EVENTFLAG_ALT_DOWN : 0;
+    e.modifiers |= b & Qt::LeftButton ? EVENTFLAG_LEFT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::RightButton ? EVENTFLAG_RIGHT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::MiddleButton ? EVENTFLAG_MIDDLE_MOUSE_BUTTON : 0;
+
+    if (QEvent::MouseMove == event->type()) {
+      pCefBrowser_->GetHost()->SendMouseMoveEvent(e, false);
+      return;
+    }
+
+    // qDebug() << "====== onViewMouseEvent:" << event;
+
+    CefBrowserHost::MouseButtonType mbt = MBT_LEFT;
+    switch (event->button()) {
+      case Qt::LeftButton: {
+        mbt = MBT_LEFT;
+      } break;
+      case Qt::RightButton: {
+        mbt = MBT_RIGHT;
+      } break;
+      case Qt::MiddleButton: {
+        mbt = MBT_MIDDLE;
+      } break;
+      default:
+        break;
+    }
+
+    if (QEvent::MouseButtonPress == event->type()) {
+      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, false, 1);
+    } else if (QEvent::MouseButtonDblClick == event->type()) {
+      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, false, 2);
+    } else if (QEvent::MouseButtonRelease == event->type()) {
+      // if the release was generated right after a popup, we must discard it
+      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, true, 1);
+    }  
 }

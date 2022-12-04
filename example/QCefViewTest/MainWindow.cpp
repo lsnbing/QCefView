@@ -43,7 +43,8 @@ MainWindow::MainWindow(QWidget* parent)
 
   createCefView();
 
-  rightCefViewWidget = new CefViewWidget("https://www.testufo.com", nullptr, this);
+  //rightCefViewWidget = new CefViewWidget("https://www.testufo.com", nullptr, this);
+  rightCefViewWidget = new CefViewWidget("https://cn.bing.com", nullptr, this);
   ui.rightCefViewContainer->layout()->addWidget(rightCefViewWidget);
 }
 

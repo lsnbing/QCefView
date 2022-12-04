@@ -1,15 +1,15 @@
 ﻿#include "CCefQMLClientDelegate.h"
 
+#include <QApplication>
 #include <QImage>
 #include <QScreen>
-#include <QThread>
-#include <QApplication>
-#include <QScreen>
 #include <QSizeF>
+#include <QThread>
 
 //#include "QCefSettingPrivate.h"
 #include "QCefQMLView.h"
 #include "QCefQMLViewPrivate.h"
+#include "QCefSettingPrivate.h"
 #include "utils/ValueConvertor.h"
 
 CCefQMLClientDelegate::CCefQMLClientDelegate(QCefQMLViewPrivate* p)
@@ -94,24 +94,6 @@ CCefQMLClientDelegate::reportJSResult(CefRefPtr<CefBrowser>& browser,
   pCefViewPrivate_->q_ptr->reportJavascriptResult(browserId, frameId, contextId, qV);
 }
 
-void
-CCefQMLClientDelegate::onAfterCreate(CefRefPtr<CefBrowser>& browser)
-{
-  QWindow* w = nullptr;
-  Qt::ConnectionType c = Qt::BlockingQueuedConnection;
-
-  QMetaObject::invokeMethod(
-    pCefViewPrivate_,
-    [=]() {
-      CefRefPtr<CefBrowser> b(browser);
-      if (b->IsPopup())
-        pCefViewPrivate_->onCefPopupBrowserCreated(b, w);
-      else
-        pCefViewPrivate_->onCefMainBrowserCreated(b, w);
-    },
-    c);
-}
-
 // -----------------Render
 
 bool
@@ -164,10 +146,10 @@ CCefQMLClientDelegate::getScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, 
   if (!QMLIsValidBrowser(browser))
     return false;
 
-  //QPoint ptScreen = pCefViewPrivate_->q_ptr->mapToGlobal(QPoint(viewX, viewY));
-  //screenX = ptScreen.x();
-  //screenY = ptScreen.y();
-  //TODO by sl
+  // QPoint ptScreen = pCefViewPrivate_->q_ptr->mapToGlobal(QPoint(viewX, viewY));
+  // screenX = ptScreen.x();
+  // screenY = ptScreen.y();
+  // TODO by sl
 
   screenX = 0;
   screenY = 0;
@@ -179,7 +161,7 @@ CCefQMLClientDelegate::getScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInf
   if (!QMLIsValidBrowser(browser))
     return false;
 
-  #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
   QScreen* currentScreen = pCefViewPrivate_->q_ptr->screen();
 #else
   QWidget* ancestorWidget = pCefViewPrivate_->q_ptr->window();
@@ -272,4 +254,74 @@ CCefQMLClientDelegate::onTextSelectionChanged(CefRefPtr<CefBrowser> browser,
 void
 CCefQMLClientDelegate::onVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                                   CefRenderHandler::TextInputMode input_mode)
+{}
+
+// LifSpanHandler
+bool
+CCefQMLClientDelegate::onBeforePopup(CefRefPtr<CefBrowser>& browser,
+                                     int64_t frameId,
+                                     const std::string& targetUrl,
+                                     const std::string& targetFrameName,
+                                     CefLifeSpanHandler::WindowOpenDisposition targetDisposition,
+                                     CefWindowInfo& windowInfo,
+                                     CefBrowserSettings& settings,
+                                     bool& DisableJavascriptAccess)
+{
+  bool result = false;
+  if (pCefViewPrivate_) {
+    auto url = QString::fromStdString(targetUrl);
+    auto name = QString::fromStdString(targetFrameName);
+
+    QCefSetting s;
+    QCefQMLView::CefWindowOpenDisposition d = (QCefQMLView::CefWindowOpenDisposition)targetDisposition;
+    QCefSettingPrivate::CopyFromCefBrowserSettings(&s, &settings);
+
+    Qt::ConnectionType c = pCefViewPrivate_->q_ptr->thread() == QThread::currentThread() ? Qt::DirectConnection
+                                                                                         : Qt::BlockingQueuedConnection;
+    QMetaObject::invokeMethod(pCefViewPrivate_->q_ptr,
+                              "onBeforePopup",                                 //
+                              c,                                               //
+                              Q_RETURN_ARG(bool, result),                      //
+                              Q_ARG(qint64, frameId),                          //
+                              Q_ARG(const QString&, url),                      //
+                              Q_ARG(const QString&, name),                     //
+                              Q_ARG(QCefQMLView::CefWindowOpenDisposition, d), //
+                              Q_ARG(QCefSetting&, s),                          //
+                              Q_ARG(bool&, DisableJavascriptAccess)            //
+    );
+    QCefSettingPrivate::CopyToCefBrowserSettings(&s, &settings);
+  }
+  return result;
+}
+
+void
+CCefQMLClientDelegate::onAfterCreate(CefRefPtr<CefBrowser>& browser)
+{
+  if (!pCefViewPrivate_)
+    return;
+
+  QWindow* w = nullptr;
+
+  Qt::ConnectionType c = Qt::BlockingQueuedConnection;
+
+  QMetaObject::invokeMethod(
+    pCefViewPrivate_,
+    [=]() {
+      CefRefPtr<CefBrowser> b(browser);
+      if (b->IsPopup())
+        pCefViewPrivate_->onCefPopupBrowserCreated(b, w);
+      else
+        pCefViewPrivate_->onCefMainBrowserCreated(b, w);
+    },
+    c);
+}
+
+bool
+CCefQMLClientDelegate::doClose(CefRefPtr<CefBrowser> browser)
+{
+  return false;
+}
+
+void
+CCefQMLClientDelegate::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {}

@@ -93,18 +93,17 @@ public:
 
   // LifSpanHandler
   virtual bool onBeforePopup(CefRefPtr<CefBrowser>& browser,
-      int64_t frameId,
-      const std::string& targetUrl,
-      const std::string& targetFrameName,
-      CefLifeSpanHandler::WindowOpenDisposition targetDisposition,
-      CefWindowInfo& windowInfo,
-      CefBrowserSettings& settings,
-      bool& DisableJavascriptAccess) override {
-    return true;
-  }
+                             int64_t frameId,
+                             const std::string& targetUrl,
+                             const std::string& targetFrameName,
+                             CefLifeSpanHandler::WindowOpenDisposition targetDisposition,
+                             CefWindowInfo& windowInfo,
+                             CefBrowserSettings& settings,
+                             bool& DisableJavascriptAccess) override;
+
   virtual void onAfterCreate(CefRefPtr<CefBrowser>& browser) override;
-  virtual bool doClose(CefRefPtr<CefBrowser> browser) override { return true; }
-  virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {}
+  virtual bool doClose(CefRefPtr<CefBrowser> browser) override;
+  virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   // LoadHandler
   virtual void loadingStateChanged(CefRefPtr<CefBrowser>& browser,

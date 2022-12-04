@@ -2,7 +2,7 @@
 
 #include <QCefContext.h>
 
-//#include "MainWindow.h"
+#include "MainWindow.h"
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -17,7 +17,7 @@ main(int argc, char* argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
-  QGuiApplication a(argc, argv);
+  QApplication a(argc, argv);
 
   // build QCefConfig
   QCefConfig config;
@@ -53,6 +53,9 @@ main(int argc, char* argv[])
   QQuickView* view = new QQuickView;
   view->setSource(QUrl("qrc:/qml/main.qml"));
   view->show();
+
+  QObject::connect(view, &QQuickView::close, [&a]() { a.quit();
+      });
 
   return a.exec();
 }

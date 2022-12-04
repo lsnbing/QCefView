@@ -96,6 +96,10 @@ public:
   void onOsrUpdatePopupFrame(const QImage& frame, const QRegion& region);
   void onOsrUpdateViewFrame(const QImage& frame, const QRegion& region);
 
+  void onViewWheelEvent(QWheelEvent* event);
+  void onViewMouseEvent(QMouseEvent* event);
+
+
 signals:
   void updateOsrFrame();
 

@@ -27,15 +27,17 @@ QCefQMLView::QCefQMLView(const QString url, const QCefSetting* setting, QQuickIt
   : QQuickPaintedItem(parent)
   , d_ptr(new QCefQMLViewPrivate(QCefContext::instance()->d_func(), this, url, setting))
 {
+  setAcceptedMouseButtons(Qt::AllButtons);
   d_ptr->createCefBrowser(this, url, setting);
 }
 
 QCefQMLView::QCefQMLView(QQuickItem* parent)
-  : QCefQMLView("http://www.baidu.com", nullptr, parent)
+  : QCefQMLView("http://cn.bing.com", nullptr, parent)
 {}
 
 QCefQMLView ::~QCefQMLView()
 {
+  qDebug() << "delete";
   if (d_ptr) {
     d_ptr->destroyCefBrowser();
   }
@@ -201,28 +203,44 @@ QCefQMLView::keyReleaseEvent(QKeyEvent* event)
 /// </summary>
 void
 QCefQMLView::mouseMoveEvent(QMouseEvent* event)
-{}
+{
+  Q_D(QCefQMLView);
+  d->onViewMouseEvent(event);
+  QQuickPaintedItem::mouseMoveEvent(event);
+}
 
 /// <summary>
 /// Please refer to QWidget::mousePressEvent
 /// </summary>
 void
 QCefQMLView::mousePressEvent(QMouseEvent* event)
-{}
+{
+  Q_D(QCefQMLView);
+  d->onViewMouseEvent(event);
+  QQuickPaintedItem::mousePressEvent(event);
+}
 
 /// <summary>
 /// Please refer to QWidget::mouseReleaseEvent
 /// </summary>
 void
 QCefQMLView::mouseReleaseEvent(QMouseEvent* event)
-{}
+{
+  Q_D(QCefQMLView);
+  d->onViewMouseEvent(event);
+  QQuickPaintedItem::mouseReleaseEvent(event);
+}
 
 /// <summary>
 /// Please refer to QWidget::wheelEvent
 /// </summary>
 void
 QCefQMLView::wheelEvent(QWheelEvent* event)
-{}
+{
+  Q_D(QCefQMLView);
+  d->onViewWheelEvent(event);
+  QQuickPaintedItem::wheelEvent(event);
+}
 
 void
 QCefQMLView::paint(QPainter* painter)
