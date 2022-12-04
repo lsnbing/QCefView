@@ -1,4 +1,4 @@
-/*
+﻿/*
  * File: QCefContext.h
  * Project: QCefView
  * Created: 29th March 2016
@@ -30,6 +30,7 @@ class QCEFVIEW_EXPORT QCefContext : public QObject
   QScopedPointer<QCefContextPrivate> d_ptr;
 
   friend class QCefView;
+  friend class QCefQMLView;
 
 public:
   /// <summary>

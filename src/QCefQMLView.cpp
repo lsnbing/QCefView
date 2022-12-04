@@ -14,7 +14,6 @@
 
 #include <QCefContext.h>
 
-#include "QCefContext.h"
 #include "details/CCefQMLClientDelegate.h"
 #include "details/QCefEventPrivate.h"
 #include "details/QCefSettingPrivate.h"

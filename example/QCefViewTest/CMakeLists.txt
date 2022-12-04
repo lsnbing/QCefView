@@ -6,8 +6,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui Widgets Quick REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets Quick REQUIRED)
 
 get_target_property(_qmake_executable Qt${QT_VERSION_MAJOR}::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
@@ -73,8 +73,10 @@ if(OS_WINDOWS)
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Quick
     QCefView
   )
+
 
   target_compile_definitions(${PROJECT_NAME} PRIVATE
     UNICODE
@@ -112,6 +114,7 @@ if(OS_WINDOWS)
 
     # Deploy the Qt Application
     COMMAND ${DEPLOYQT_EXECUTABLE}
+    --qmldir ${CMAKE_CURRENT_SOURCE_DIR}/qml
     --no-svg
     --no-translations
     --no-compiler-runtime

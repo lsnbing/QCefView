@@ -2,12 +2,22 @@
 
 #include <QCefContext.h>
 
-#include "MainWindow.h"
+//#include "MainWindow.h"
+
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQuickView>
+#include <QQmlContext>
+#include "QCefQMLView.h"
 
 int
 main(int argc, char* argv[])
 {
-  QApplication a(argc, argv);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+
+  QGuiApplication a(argc, argv);
 
   // build QCefConfig
   QCefConfig config;
@@ -34,9 +44,15 @@ main(int argc, char* argv[])
 
   // initialize QCefContext instance with config
   QCefContext cefContext(&a, argc, argv, &config);
+  //MainWindow w;
+  //w.show();
 
-  MainWindow w;
-  w.show();
+
+  qmlRegisterType<QCefQMLView>("QCefQMLView", 1, 0, "QCefQMLView");
+
+  QQuickView* view = new QQuickView;
+  view->setSource(QUrl("qrc:/qml/main.qml"));
+  view->show();
 
   return a.exec();
 }
